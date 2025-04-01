@@ -20,7 +20,6 @@
 
 from typing import Dict, Type
 from harmonize_ds.sources.base import Source
-from harmonize_ds.sources.stac import STAC
 from harmonize_ds.sources.wfs import WFS
 from harmonize_ds.sources.wcs import WCS
 
@@ -44,7 +43,6 @@ class DataSourceFactory:
 
 
 # Registrar as fontes de dados na fábrica
-DataSourceFactory.register("STAC", STAC)
 DataSourceFactory.register("WCS", WCS)
 DataSourceFactory.register("WFS", WFS)
 

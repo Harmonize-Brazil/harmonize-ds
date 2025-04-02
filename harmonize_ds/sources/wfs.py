@@ -47,10 +47,10 @@ class WFS(Source):
         self._base_path = "wfs?service=wfs&version=2.0.0"
 
     def get_type(self) -> str:
-        """Retorna o tipo da fonte de dados.
+        """Returns the data source type.
 
         Returns:
-            str: Tipo da fonte de dados ("WFS").
+        str: Data source type ("WFS").
         """
         return "WFS"
 
@@ -70,10 +70,10 @@ class WFS(Source):
 
     @property
     def collections(self) -> List[Dict[str, str]]:
-        """Obtém a lista de camadas disponíveis no serviço WFS.
+        """Gets the list of layers available in the WFS service.
 
         Returns:
-            List[Dict[str, str]]: Lista de dicionários com identificador e nome da coleção.
+        List[Dict[str, str]]: List of dictionaries with identifier and collection name.
         """
         return [
             {"id": self._source_id, "collection": layer}
@@ -81,7 +81,7 @@ class WFS(Source):
         ]
 
     def describe_feature(self, ft_name: str):
-
+        """Describe Feature."""
         url = f"{self._url}/{self._base_path}&request=DescribeFeatureType&typeName={ft_name}&outputFormat=application/json"
         doc = Utils._get(url)
         js = json.loads(doc)
@@ -92,6 +92,7 @@ class WFS(Source):
         return js
 
     def _extract_epsg_code(srs: str) -> int | None:
+        """Extract epsg code."""
         if srs and "EPSG" in srs:
             try:
                 return int(srs.split(":")[-1])

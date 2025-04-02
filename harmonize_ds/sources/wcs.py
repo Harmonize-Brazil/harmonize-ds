@@ -28,39 +28,39 @@ from .base import Source
 
 
 class WCS(Source):
-    """Cliente Python para acessar serviços GeoServer WFS.
+    """Python client for accessing GeoServer WCS services.
 
     Attributes:
-        source_id (str): Identificador da fonte de dados.
-        url (str): URL do serviço WFS.
+        source_id (str): Data source identifier.
+        url (str): URL of the WFS service.
     """
 
     def __init__(self, source_id: str, url: str) -> None:
-        """Inicializa o cliente WFS com a URL especificada.
+        """Initializes the WCS client with the specified URL.
 
         Args:
-            source_id (str): Identificador único da fonte de dados.
-            url (str): URL do serviço WFS.
+            source_id (str): Unique identifier of the data source.
+            url (str): URL of the WFS service.
         """
         super().__init__(source_id=source_id, url=url)
         self._base_path = "wcs?service=wcs&version=1.1.1"
 
     @property
     def collections(self) -> List[Dict[str, str]]:
-        """Obtém a lista de camadas disponíveis no serviço WFS.
+        """Gets the list of layers available in the WFS service.
 
         Returns:
-            List[Dict[str, str]]: Lista de dicionários com identificador e nome da coleção.
+        List[Dict[str, str]]: List of dictionaries with identifier and collection name.
         """
         return [
             {"id": self._source_id, "collection": layer} for layer in self.list_image()
         ]
 
     def get_type(self) -> str:
-        """Retorna o tipo da fonte de dados.
+        """Returns the data source type.
 
         Returns:
-            str: Tipo da fonte de dados ("WCS").
+            str: Data source type ("WCS").
         """
         return "WCS"
 
@@ -113,13 +113,13 @@ class WCS(Source):
         return base_url
 
     def describe(self, collection_id: str) -> Dict:
-        """Obtém o esquema de uma coleção específica.
+        """Gets the schema of a specific collection.
 
         Args:
-            collection_id (str): Identificador da coleção.
+            collection_id (str): Collection identifier.
 
         Returns:
-            Dict: Esquema da coleção.
+            Dict: Collection schema.
         """
         infos = self.getcapabilities(collection_id)
         coverage = self.describe_coverage(collection_id)
@@ -138,6 +138,7 @@ class WCS(Source):
         return metadata
 
     def _extract_bbox(self, coverage_summary, ns):
+        """Extract BBOX."""
         bbox_el = coverage_summary.find("ows:WGS84BoundingBox", ns)
         if bbox_el is not None:
             lower = bbox_el.findtext("ows:LowerCorner", default="", namespaces=ns)

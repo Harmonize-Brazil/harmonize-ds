@@ -28,20 +28,20 @@ from harmonize_ds.sources.base import Source
 
 
 class DataSourceManager:
-    """Gerencia as fontes de dados carregadas a partir do arquivo de configuração."""
+    """Manages data sources loaded from the configuration file."""
 
     def __init__(self, config_path: str = "config/config.yaml") -> None:
-        """Inicializa o gerenciador e carrega as fontes de dados do YAML.
+        """Initializes the manager and loads the YAML data sources.
 
         Args:
-            config_path (str): Caminho para o arquivo de configuração YAML.
+            config_path (str): Path to the YAML configuration file.
         """
         self._datasources: List[Source] = []
         self._config_path = config_path
         self.load_all()
 
     def load_all(self) -> None:
-        """Carrega as fontes de dados a partir do arquivo de configuração (YAML)."""
+        """Loads data sources from the configuration file."""
         try:
             with (
                 importlib.resources.files("harmonize_ds")
@@ -50,9 +50,9 @@ class DataSourceManager:
             ):
                 config = yaml.safe_load(file)
         except FileNotFoundError:
-            raise RuntimeError("Arquivo de configuração config.yaml não encontrado.")
+            raise RuntimeError("Configuration file config.yaml not found")
         except yaml.YAMLError as e:
-            raise RuntimeError(f"Erro ao carregar YAML: {e}")
+            raise RuntimeError(f"Error loading YAML: {e}")
 
         self._datasources = [
             DataSourceFactory.make(source["type"], source["id"], source["host"])
@@ -60,18 +60,16 @@ class DataSourceManager:
         ]
 
     def get_datasources(self) -> List[Source]:
-        """Retorna todas as fontes de dados carregadas."""
+        """Returns all loaded data sources."""
         return self._datasources
 
     def get_datasource_by_id(self, id: str) -> Optional[Source]:
-        """Retorna uma fonte de dados pelo ID ou None se não encontrada."""
+        """Returns a data source by ID or None if not found."""
         for ds in self._datasources:
             if ds._source_id == id:
                 return ds
         return None
 
     def __repr__(self) -> str:
-        """Representação da instância para depuração."""
-        return (
-            f"<DataSourceManager {len(self._datasources)} fontes de dados carregadas>"
-        )
+        """Instance representation for debugging."""
+        return (f"<DataSourceManager {len(self._datasources)} loaded data sources>")

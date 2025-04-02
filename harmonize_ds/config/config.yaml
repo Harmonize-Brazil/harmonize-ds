@@ -1,0 +1,8 @@
+sources:
+  - type: WFS
+    id: "HARMONIZE-WFS"
+    host: "https://brazildatacube.dpi.inpe.br/harmonize/dev/geoserver/bdc_lcc/wfs"
+  - type: WCS
+    id: "HARMONIZE-WCS"
+    host: "https://brazildatacube.dpi.inpe.br/harmonize/dev/geoserver/bdc_lcc/wcs"
+

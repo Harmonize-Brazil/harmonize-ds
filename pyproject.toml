@@ -1,0 +1,72 @@
+[project]
+name = "harmonize-ds"
+version = "0.1.0"
+description = "."
+readme = "README.rst"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Harmonize Brazil Team", email = "bdc.team@inpe.br"},
+]
+keywords = [
+    "lulc"
+]
+classifiers = [
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License version 3 License",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "jinja2 (>=3.1.5,<4.0.0)",
+    "click (>=8.1.8,<9.0.0)",
+    "geopandas (>=1.0.1,<2.0.0)",
+    "pandas (>=2.2.3,<3.0.0)",
+    "httpx (>=0.28.1,<0.29.0)",
+    "pystac-client (>=0.8.5,<0.9.0)",
+    "PyYAML==6.0.2",
+    "owslib (>=0.32.1,<0.33.0)",
+    "rich (>=13.9.4,<14.0.0)",
+]
+
+# Extras Dependencies
+[project.optional-dependencies]
+dev = ["pre-commit"]
+docs = [
+    "Sphinx>=7.0",
+    "sphinx_rtd_theme",
+    "sphinx-copybutton",
+    "sphinx-tabs",
+]
+tests = [
+    "coverage>=6.4",
+    "coveralls>=3.3",
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "pytest-pep8>=1.0",
+    "pydocstyle>=4.0",
+    "isort>4.3",
+    "check-manifest>=0.40",
+]
+all = ["harmonize_ds[docs,tests]"]
+## End extras dependencies
+
+[build-system]
+requires = ["setuptools>=67.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["harmonize_ds*"]
+exclude = ["tests*"]
+namespaces = false
+
+[tool.setuptools.package-data]
+"harmonize_ds" = ["py.typed"]
+
+[project.scripts]
+harmonize-ds = "harmonize_ds.cli:cli"

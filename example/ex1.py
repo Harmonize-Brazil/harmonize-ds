@@ -44,3 +44,7 @@ temp = HARMONIZEDS.get_collection(
 )
 
 print(temp.describe())
+
+temp_ne = HARMONIZEDS.get_collection(id="HARMONIZE-WCS", collection_id="bdc_lcc:temp_max_NE_mun_epiweek_ras")
+image_url = temp_ne.get(filter={'time': "2018-12-30"}, srid=4326)
+print(f"Download URL: {image_url}")

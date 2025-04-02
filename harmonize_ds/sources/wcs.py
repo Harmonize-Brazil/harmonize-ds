@@ -64,28 +64,29 @@ class WCS(Source):
         """
         return "WCS"
 
+
     def list_image(self) -> List[str]:
-        """Return the list of all available images in the service."""
-        url = f"{self._url}/{self._base_path}&request=GetCapabilities&outputFormat=application/json"
+        """Return available imagens in WCS service."""
+        url = f"{self._url}/{self._base_path}&request=GetCapabilities&outputFormat=application/xml"
 
         try:
             doc = Utils._get(url)
             xmldoc = etree.fromstring(doc.encode("utf-8"))
         except etree.XMLSyntaxError as e:
-            print(f"Error parsing XML: {e}")
+            print(f"Erro ao processar XML: {e}")
             return []
 
         namespaces = {
-            "wcs": "http://www.opengis.net/wcs/2.0",
-            "ows": "http://www.opengis.net/ows/2.0",
+            "wcs": "http://www.opengis.net/wcs/1.1.1",
+            "ows": "http://www.opengis.net/ows/1.1",
         }
-        itemlist = xmldoc.findall(".//wcs:CoverageSummary", namespaces)
 
-        available_images: List[str] = []
-        for coverage_summary in itemlist:
-            coverage_id = coverage_summary.find("wcs:CoverageId", namespaces)
-            if coverage_id is not None and coverage_id.text:
-                available_images.append(coverage_id.text)
+        itemlist = xmldoc.findall(".//wcs:CoverageSummary", namespaces)
+        available_images = [
+            coverage.find("wcs:Identifier", namespaces).text
+            for coverage in itemlist
+            if coverage.find("wcs:Identifier", namespaces) is not None
+        ]
 
         return available_images
 

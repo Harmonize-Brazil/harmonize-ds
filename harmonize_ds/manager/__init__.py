@@ -18,8 +18,7 @@
 
 """Python Client Library for the Harmonize Datasources."""
 
-from .datasource_manager import DataSourceManager  # Importa o gerenciador de fontes de dados
-from .datasource_factory import DataSourceFactory  # Importa a fábrica de fontes de dados
-
+from .datasource_factory import DataSourceFactory
+from .datasource_manager import DataSourceManager
 
 __all__ = ['DataSourceManager', 'DataSourceFactory']

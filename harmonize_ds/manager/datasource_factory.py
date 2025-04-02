@@ -19,30 +19,31 @@
 """Python Client Library for the Harmonize Datasources."""
 
 from typing import Dict, Type
+
 from harmonize_ds.sources.base import Source
-from harmonize_ds.sources.wfs import WFS
 from harmonize_ds.sources.wcs import WCS
+from harmonize_ds.sources.wfs import WFS
 
 
 class DataSourceFactory:
+    """Class DataSourceFactory."""
+
     _factories: Dict[str, Type[Source]] = {}
 
     @classmethod
     def register(cls, name: str, factory: Type[Source]) -> None:
-        """Registra uma nova fonte de dados na fábrica."""
+        """Register a new data source at the factory."""
         cls._factories[name] = factory
 
     @classmethod
     def make(cls, ds_type: str, ds_id: str, host: str) -> Source:
-        """Cria uma instância da fonte de dados registrada."""
+        """Creates an instance of the registered data source."""
         try:
             factory = cls._factories[ds_type]
-        except KeyError:
-            raise ValueError(f"Tipo de fonte de dados '{ds_type}' não registrado.")
+        except KeyError as exc:
+            raise ValueError(f"Datasource '{ds_type}' not registered {exc}.")
         return factory(ds_id, host)
 
 
-# Registrar as fontes de dados na fábrica
 DataSourceFactory.register("WCS", WCS)
 DataSourceFactory.register("WFS", WFS)
-

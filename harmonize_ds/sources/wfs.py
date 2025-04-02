@@ -1,7 +1,29 @@
+#
+# This file is part of Python Client Library for the Harmonize Datasources.
+# Copyright (C) 2025 INPE.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/gpl-3.0.html>.
+#
+
+"""Python Client Library for the Harmonize Datasources."""
+
 import gzip
 import json
 from io import BytesIO
 from time import sleep
+from typing import Any, Dict, List, Optional
+from xml.dom import minidom
 
 import geopandas as gpd
 import httpx
@@ -14,16 +36,8 @@ from rich.progress import (BarColumn, DownloadColumn, Progress, TextColumn,
 from shapely.geometry import (LineString, MultiPoint, MultiPolygon, Point,
                               Polygon)
 
-from .base import Source
 from ..utils import Utils
-
-console = Console()
-
-
-from typing import Any, Dict, List, Optional, Tuple, Union
-from xml.dom import minidom
-
-
+from .base import Source
 
 WFS_FORMATS = {
     "shp": "shape-zip",
@@ -32,9 +46,15 @@ WFS_FORMATS = {
     "json": "application/json",
 }
 
+console = Console()
 
 class WFS(Source):
-    """A class that describes a WFS."""
+    """A class that describes a WFS.
+
+    Attributes:
+        source_id (str): Data source identifier.
+        url (str): URL of the WFS service.
+    """
 
     def __init__(self, source_id: str, url: str) -> None:
         """Create a WFS client attached to the given host address.
@@ -47,26 +67,12 @@ class WFS(Source):
         self._base_path = "wfs?service=wfs&version=2.0.0"
 
     def get_type(self) -> str:
-        """Retorna o tipo da fonte de dados.
+        """Returns the data source type.
 
         Returns:
-            str: Tipo da fonte de dados ("WFS").
+        str: Data source type ("WFS").
         """
         return "WFS"
-
-    def _get(self, url: str) -> str:
-        """Exec GET request with httpx."""
-        try:
-            response = httpx.get(url, timeout=30.0)
-            response.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            raise RuntimeError(
-                f"Error HTTP {exc.response.status_code}: {exc.response.text}"
-            ) from exc
-        except httpx.RequestError as exc:
-            raise RuntimeError(f"Connection Error With WFS : {exc}") from exc
-
-        return response.text
 
     def list_features(self) -> Dict[str, List[str]]:
         """Return the list of features available from the WFS."""
@@ -84,10 +90,10 @@ class WFS(Source):
 
     @property
     def collections(self) -> List[Dict[str, str]]:
-        """Obtém a lista de camadas disponíveis no serviço WFS.
+        """Gets the list of layers available in the WFS service.
 
         Returns:
-            List[Dict[str, str]]: Lista de dicionários com identificador e nome da coleção.
+        List[Dict[str, str]]: List of dictionaries with identifier and collection name.
         """
         return [
             {"id": self._source_id, "collection": layer}
@@ -95,9 +101,9 @@ class WFS(Source):
         ]
 
     def describe_feature(self, ft_name: str):
-
+        """Describe Feature."""
         url = f"{self._url}/{self._base_path}&request=DescribeFeatureType&typeName={ft_name}&outputFormat=application/json"
-        doc = self._get(url)
+        doc = Utils._get(url)
         js = json.loads(doc)
 
         if not js.get("featureTypes"):
@@ -105,7 +111,8 @@ class WFS(Source):
 
         return js
 
-    def _extract_epsg_code(srs: str) -> int | None:
+    def _extract_epsg_code(self, srs: str) -> int | None:
+        """Return epsg code."""
         if srs and "EPSG" in srs:
             try:
                 return int(srs.split(":")[-1])
@@ -114,19 +121,20 @@ class WFS(Source):
         return None
 
     def capabilites(self, ft_name: str):
+        """Get capabilites function."""
         url = f"{self._url}/{self._base_path}&request=GetCapabilities&outputFormat=application/json"
-        doc = self._get(url)
+        doc = Utils._get(url)
         tree = etree.fromstring(doc.encode())
         ns = {
             "wfs": "http://www.opengis.net/wfs/2.0",
-            "ows": "http://www.opengis.net/ows/1.1",  # versão correta para OWS
+            "ows": "http://www.opengis.net/ows/1.1",
         }
 
         xpath_expr = f".//wfs:FeatureType[wfs:Name='{ft_name}']"
         feature_el = tree.find(xpath_expr, namespaces=ns)
 
         if feature_el is None:
-            return None
+            raise ValueError("Feature not found in capabilities") 
 
         return {
             "name": ft_name,
@@ -177,90 +185,73 @@ class WFS(Source):
 
         return feature
 
-    def build_cql_filter(self, filter: dict) -> str:
-
-        clauses = []
-
-        # CQL para data
-        if "date" in filter:
-            date_value = filter["date"]
-            if "/" in date_value:
-                start, end = date_value.split("/")
-                clause = f"date BETWEEN '{start}' AND '{end}'"
-            else:
-                clause = f"date = '{date_value}'"
-            clauses.append(clause)
-
-        return " AND ".join(clauses)
-
-    def get_dataset(
+    
+    def get(
         self,
-        ft_name: str,
-        max_features: Optional[int] = None,
-        bbox: Optional[str] = None,
+        collection_id: str,
         filter: Optional[Dict[str, Any]] = None,
-        output: str = "json",
-        page_size: int = 1000,
-        epsg: int = 4326,
+        srid: int = 4326,
     ) -> gpd.GeoDataFrame:
         """Return features from a specific feature type with pagination and progress bar."""
-        if not ft_name:
-            raise ValueError("Missing feature name.")
+        if not collection_id:
+            raise ValueError("Missing collection_id.")
 
-        output_format = WFS_FORMATS.get(output.lower(), "application/json")
+        output_format = "application/json"
+
         base_url = (
-            f"{self._url}/{self._base_path}&request=GetFeature&typeName={ft_name}"
-            f"&outputFormat={output_format}&srsName=EPSG:{epsg}"
+            f"{self._url}/{self._base_path}&request=GetFeature&typeName={collection_id}"
+            f"&outputFormat={output_format}&srsName=EPSG:{srid}"
         )
 
-        if bbox:
-            base_url += f"&bbox={bbox}"
-
-        # Gerar a parte do filtro se for fornecido
         if filter:
-            cql_filter = self.build_cql_filter(filter)
-            if cql_filter:
-                base_url += f"&cql_filter={cql_filter}"
+            if "bbox" in filter:
+                bbox = ",".join(map(str, filter["bbox"]))
+                base_url += f"&bbox={bbox}"
 
+            if "date" in filter:
+                clauses = []
+                date_value = filter["date"]
+                if "/" in date_value:
+                    start, end = date_value.split("/")
+                    clause = f"date BETWEEN '{start}' AND '{end}'"
+                else:
+                    clause = f"date = '{date_value}'"
+                clauses.append(clause)
+
+                cql_filter = " AND ".join(clauses)
+
+                base_url += f"&cql_filter={cql_filter}"
         all_features = []
         start_index = 0
         total_received = 0
-        total_features = max_features if max_features else float("inf")
+        page_size = 1000
 
-        # Barra de progresso simples com rich
-        with console.status("[bold green]Iniciando downloads...") as status:
+        with console.status("[bold green]Starting downloads...") as status:
             while True:
                 page_url = f"{base_url}&startIndex={start_index}&count={page_size}"
                 status.update(
                     f"[bold cyan]Download data {start_index}..."
-                )  # Atualiza a descrição com o índice
-                sleep(1)  # Simula o download de cada página
+                )
+                sleep(1)
 
-                doc = self._get(page_url)
+                doc = Utils._get(page_url)
 
                 try:
                     data = json.loads(doc)
                 except Exception as e:
-                    raise RuntimeError(f"Falha ao decodificar JSON: {e}")
+                    raise RuntimeError(f"Error in JSON: {e}")
 
                 features = data.get("features", [])
                 received = len(features)
 
                 if not features:
-                    console.log("[yellow]⚠ Encerrando...")
+                    console.log("[yellow]⚠ Finishing...")
                     break
 
                 all_features.extend(features)
                 total_received += received
 
-                if max_features and total_received >= max_features:
-                    console.log("[green]✔ Limite máximo de features atingido.")
-                    break
-
                 start_index += received
-
-            if max_features:
-                all_features = all_features[:max_features]
 
             fc = dict()
 
@@ -305,12 +296,12 @@ class WFS(Source):
             fc["crs"] = data["crs"]
 
             console.log(
-                f"[bold green]✅ Total de features recebidas: {len(all_features)}"
+                f"[bold green]✅ Total features received: {len(all_features)}"
             )
 
             df_obs = gpd.GeoDataFrame.from_dict(fc["features"])
 
 
-            df_dataset_data = df_obs.set_geometry(col="geom", crs=f"EPSG:{epsg}")
+            df_dataset_data = df_obs.set_geometry(col="geom", crs=f"EPSG:{srid}")
 
             return df_dataset_data

@@ -15,10 +15,4 @@
     You should have received a copy of the GNU General Public License
     along with this program. If not, see <https://www.gnu.org/licenses/gpl-3.0.html>.
 
-
-=======
-Changes
-=======
-
-Version 0.1.0 (2025-x-x)
---------------------------
+.. include:: ../../CHANGES.rst

@@ -16,31 +16,20 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 
-"""Python Client Library for the Harmonize Datasources."""
+# You can set these variables from the command line, and also
+# from the environment for the first two.
+SPHINXOPTS    ?=
+SPHINXBUILD   ?= sphinx-build
+SOURCEDIR     = .
+BUILDDIR      = _build
 
-from harmonize_ds import HARMONIZEDS
+# Put it first so that "make" without argument is like "make help".
+help:
+	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-print("Available collections:")
-for collection in HARMONIZEDS.collections():
-    print(collection)
+.PHONY: help Makefile
 
-# Get specific collection
-zica = HARMONIZEDS.get_collection(
-    id="HARMONIZE-WFS", collection_id="bdc_lcc:zika_cases_north_mun_week"
-)
-
-# Describe operation
-metadata_zica = zica.describe()
-print(metadata_zica)
-
-print(f"Title: {zica.title}")
-print(f"Abstract: {zica.abstract}")
-
-df = zica.get(filter={"date": "2017-02-26"})
-print(df.head())
-
-temp = HARMONIZEDS.get_collection(
-    id="HARMONIZE-WCS", collection_id="bdc_lcc:temp_max_NO_mun_month_ras"
-)
-
-print(temp.describe())
+# Catch-all target: route all unknown targets to Sphinx using the new
+# "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
+%: Makefile
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

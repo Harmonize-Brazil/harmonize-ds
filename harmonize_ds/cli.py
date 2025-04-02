@@ -90,7 +90,6 @@ def collections(config: Config, verbose):
 @pass_config
 def describe(config: Config, verbose, collection_id, id):
     """Describe a collection by its source ID and collection ID."""
-
     collection = config.service.get_collection(
         id=id, collection_id=collection_id
     ).describe()
@@ -132,7 +131,6 @@ def describe(config: Config, verbose, collection_id, id):
     bbox_table.add_row("Lower Corner", lower)
     bbox_table.add_row("Upper Corner", upper)
 
-    # Schema (se houver)
     schema_tree = Tree("[bold magenta]Schema")
     schema = collection.get("schema", {})
     if schema:
@@ -141,7 +139,6 @@ def describe(config: Config, verbose, collection_id, id):
     else:
         schema_tree.add("[dim]No schema available[/dim]")
 
-    # Geometry (se houver)
     geometry = collection.get("geometry", {})
     geom_tree = Tree("[bold magenta]Geometry")
     if geometry:
@@ -150,14 +147,12 @@ def describe(config: Config, verbose, collection_id, id):
     else:
         geom_tree.add("[dim]No geometry information[/dim]")
 
-    # Time info (se houver)
     time_tree = Tree("[bold magenta]Time Information")
     if "timelimits" in collection:
         time_tree.add(f"[green]Time Limits[/green]: {collection['timelimits']}")
     if "timepositions" in collection:
         time_tree.add(f"[green]Time Positions[/green]: {collection['timepositions']}")
 
-    # Monta os painéis
     console.print(
         Panel(general_table, title="[bold green]General Info", border_style="blue")
     )
@@ -201,7 +196,6 @@ def describe(config: Config, verbose, collection_id, id):
 @pass_config
 def download(config: Config, verbose, filter, collection_id, id, driver, filename):
     """Download and save a collection data into file."""
-
     if filter:
         try:
             filter = json.loads(filter)

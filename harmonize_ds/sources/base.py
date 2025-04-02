@@ -19,8 +19,10 @@
 """Python Client Library for the Harmonize Datasources."""
 
 from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Union
+
 import geopandas as gpd
-from typing import List, Dict, Union, Optional, Any
+
 
 class Source(ABC):
     """Abstract class to represent a Data Source."""
@@ -61,13 +63,22 @@ class Source(ABC):
             Dict: A dictionary with the collection metadata.
         """
         pass
+    
+    def get(
+        self,
+        collection_id: str,
+        filter: Optional[Dict[str, Any]] = None,
+        srid: int = 4326,
+    ) -> Any:
+        """Generic method to get data from a collection.
 
-#    @abstractmethod
-#    def get_dataset(
-#        self,
-#        collection_id: str,
-#        filter: Optional[Dict[str, Any]] = None
-#    ) -> gpd.GeoDataFrame:
-#        """Obtém os dados de uma coleção com base em filtros opcionais."""
-#        pass
-#
+        Args:
+            collection_id (str): Collection identifier.
+            filter (Dict[str, Any], optional): Filters for data search.
+            bbox (List[float], optional): BBOX [min_x, min_y, max_x, max_y].
+            time (str, optional): Time filter.
+
+        Returns:
+            Any: The result of the request, depending on the source type.
+        """
+        raise NotImplementedError("get() method must be implemented.")

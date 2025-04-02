@@ -54,20 +54,6 @@ class WFS(Source):
         """
         return "WFS"
 
-    def _get(self, url: str) -> str:
-        """Exec GET request with httpx."""
-        try:
-            response = httpx.get(url, timeout=30.0)
-            response.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            raise RuntimeError(
-                f"Error HTTP {exc.response.status_code}: {exc.response.text}"
-            ) from exc
-        except httpx.RequestError as exc:
-            raise RuntimeError(f"Connection Error With WFS : {exc}") from exc
-
-        return response.text
-
     def list_features(self) -> Dict[str, List[str]]:
         """Return the list of features available from the WFS."""
         url = f"{self._url}/{self._base_path}&request=GetCapabilities&outputFormat=application/json"
@@ -97,7 +83,7 @@ class WFS(Source):
     def describe_feature(self, ft_name: str):
 
         url = f"{self._url}/{self._base_path}&request=DescribeFeatureType&typeName={ft_name}&outputFormat=application/json"
-        doc = self._get(url)
+        doc = Utils._get(url)
         js = json.loads(doc)
 
         if not js.get("featureTypes"):
@@ -115,18 +101,18 @@ class WFS(Source):
 
     def capabilites(self, ft_name: str):
         url = f"{self._url}/{self._base_path}&request=GetCapabilities&outputFormat=application/json"
-        doc = self._get(url)
+        doc = Utils._get(url)
         tree = etree.fromstring(doc.encode())
         ns = {
             "wfs": "http://www.opengis.net/wfs/2.0",
-            "ows": "http://www.opengis.net/ows/1.1",  # versão correta para OWS
+            "ows": "http://www.opengis.net/ows/1.1",
         }
 
         xpath_expr = f".//wfs:FeatureType[wfs:Name='{ft_name}']"
         feature_el = tree.find(xpath_expr, namespaces=ns)
 
         if feature_el is None:
-            return None
+            raise ValueError("Feature not found in capabilities") 
 
         return {
             "name": ft_name,
@@ -177,90 +163,73 @@ class WFS(Source):
 
         return feature
 
-    def build_cql_filter(self, filter: dict) -> str:
-
-        clauses = []
-
-        # CQL para data
-        if "date" in filter:
-            date_value = filter["date"]
-            if "/" in date_value:
-                start, end = date_value.split("/")
-                clause = f"date BETWEEN '{start}' AND '{end}'"
-            else:
-                clause = f"date = '{date_value}'"
-            clauses.append(clause)
-
-        return " AND ".join(clauses)
-
-    def get_dataset(
+    
+    def get(
         self,
-        ft_name: str,
-        max_features: Optional[int] = None,
-        bbox: Optional[str] = None,
+        collection_id: str,
         filter: Optional[Dict[str, Any]] = None,
-        output: str = "json",
-        page_size: int = 1000,
-        epsg: int = 4326,
+        srid: int = 4326,
     ) -> gpd.GeoDataFrame:
         """Return features from a specific feature type with pagination and progress bar."""
-        if not ft_name:
-            raise ValueError("Missing feature name.")
+        if not collection_id:
+            raise ValueError("Missing collection_id.")
 
-        output_format = WFS_FORMATS.get(output.lower(), "application/json")
+        output_format = "application/json"
+
         base_url = (
-            f"{self._url}/{self._base_path}&request=GetFeature&typeName={ft_name}"
-            f"&outputFormat={output_format}&srsName=EPSG:{epsg}"
+            f"{self._url}/{self._base_path}&request=GetFeature&typeName={collection_id}"
+            f"&outputFormat={output_format}&srsName=EPSG:{srid}"
         )
 
-        if bbox:
-            base_url += f"&bbox={bbox}"
-
-        # Gerar a parte do filtro se for fornecido
         if filter:
-            cql_filter = self.build_cql_filter(filter)
-            if cql_filter:
-                base_url += f"&cql_filter={cql_filter}"
+            if "bbox" in filter:
+                bbox = ",".join(map(str, filter["bbox"]))
+                base_url += f"&bbox={bbox}"
 
+            if "date" in filter:
+                clauses = []
+                date_value = filter["date"]
+                if "/" in date_value:
+                    start, end = date_value.split("/")
+                    clause = f"date BETWEEN '{start}' AND '{end}'"
+                else:
+                    clause = f"date = '{date_value}'"
+                clauses.append(clause)
+
+                cql_filter = " AND ".join(clauses)
+
+                base_url += f"&cql_filter={cql_filter}"
         all_features = []
         start_index = 0
         total_received = 0
-        total_features = max_features if max_features else float("inf")
+        page_size = 1000
 
-        # Barra de progresso simples com rich
-        with console.status("[bold green]Iniciando downloads...") as status:
+        with console.status("[bold green]Starting downloads...") as status:
             while True:
                 page_url = f"{base_url}&startIndex={start_index}&count={page_size}"
                 status.update(
                     f"[bold cyan]Download data {start_index}..."
-                )  # Atualiza a descrição com o índice
-                sleep(1)  # Simula o download de cada página
+                )
+                sleep(1)
 
-                doc = self._get(page_url)
+                doc = Utils._get(page_url)
 
                 try:
                     data = json.loads(doc)
                 except Exception as e:
-                    raise RuntimeError(f"Falha ao decodificar JSON: {e}")
+                    raise RuntimeError(f"Error in JSON: {e}")
 
                 features = data.get("features", [])
                 received = len(features)
 
                 if not features:
-                    console.log("[yellow]⚠ Encerrando...")
+                    console.log("[yellow]⚠ Finishing...")
                     break
 
                 all_features.extend(features)
                 total_received += received
 
-                if max_features and total_received >= max_features:
-                    console.log("[green]✔ Limite máximo de features atingido.")
-                    break
-
                 start_index += received
-
-            if max_features:
-                all_features = all_features[:max_features]
 
             fc = dict()
 
@@ -305,12 +274,12 @@ class WFS(Source):
             fc["crs"] = data["crs"]
 
             console.log(
-                f"[bold green]✅ Total de features recebidas: {len(all_features)}"
+                f"[bold green]✅ Total features received: {len(all_features)}"
             )
 
             df_obs = gpd.GeoDataFrame.from_dict(fc["features"])
 
 
-            df_dataset_data = df_obs.set_geometry(col="geom", crs=f"EPSG:{epsg}")
+            df_dataset_data = df_obs.set_geometry(col="geom", crs=f"EPSG:{srid}")
 
             return df_dataset_data

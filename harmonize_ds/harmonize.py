@@ -47,9 +47,13 @@ class CollectionClient:
         """Resumo da coleção, se disponível."""
         return self._metadata.get("abstract")
 
-    def get(self, filter: Optional[Dict[str, Any]] = None):
+    def get(
+        self,
+        filter: Optional[Dict[str, Any]] = None,
+        srid: int = 4326,
+    ) -> Any:
         """Obtém os dados da coleção como DataFrame, delegando para a fonte."""
-        return self._datasource.get_dataset(self._collection_id, filter=filter)
+        return self._datasource.get(self._collection_id, filter=filter, srid=srid)
 
     def __repr__(self) -> str:
         """Representação textual da coleção."""

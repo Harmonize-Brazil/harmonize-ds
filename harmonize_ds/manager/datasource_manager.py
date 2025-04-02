@@ -18,9 +18,11 @@
 
 """Python Client Library for the Harmonize Datasources."""
 
-import yaml
-from typing import List, Dict, Optional
 import importlib.resources
+from typing import List, Optional
+
+import yaml
+
 from harmonize_ds.manager.datasource_factory import DataSourceFactory
 from harmonize_ds.sources.base import Source
 
@@ -41,7 +43,11 @@ class DataSourceManager:
     def load_all(self) -> None:
         """Carrega as fontes de dados a partir do arquivo de configuração (YAML)."""
         try:
-            with importlib.resources.files('harmonize_ds').joinpath('config/config.yaml').open('r') as file:
+            with (
+                importlib.resources.files("harmonize_ds")
+                .joinpath("config/config.yaml")
+                .open("r") as file
+            ):
                 config = yaml.safe_load(file)
         except FileNotFoundError:
             raise RuntimeError("Arquivo de configuração config.yaml não encontrado.")
@@ -62,9 +68,10 @@ class DataSourceManager:
         for ds in self._datasources:
             if ds._source_id == id:
                 return ds
-        return None  # Retorna None ao invés de lançar exceção diretamente
+        return None
 
     def __repr__(self) -> str:
         """Representação da instância para depuração."""
-        return f"<DataSourceManager {len(self._datasources)} fontes de dados carregadas>"
-
+        return (
+            f"<DataSourceManager {len(self._datasources)} fontes de dados carregadas>"
+        )

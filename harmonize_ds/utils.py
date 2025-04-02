@@ -73,6 +73,7 @@ class Utils:
                 "application/geo+json",
                 "application/xml",
                 "text/xml; charset=utf-8",
+                "application/json;charset=UTF-8"
             ):
                 raise ValueError(
                     f"HTTP response is not JSON or XML: Content-Type: {content_type}"

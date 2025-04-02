@@ -19,7 +19,7 @@
 """Python Client Library for the Harmonize Datasources."""
 
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from lxml import etree
 
@@ -89,22 +89,28 @@ class WCS(Source):
 
         return available_images
 
-    def get_dataset(
+    def get(
         self,
         collection_id: str,
-        srid: int,
-        min_x: float,
-        max_x: float,
-        min_y: float,
-        max_y: float,
-        time: str,
+        filter: Optional[Dict[str, Any]] = None,
+        srid: int = 4326,
     ) -> str:
         """Build the URL to get an image (coverage) from the server based on a GetCoverage request."""
-        return (
-            f"{self._host}/{self._base_path}{self.version}&request=GetCoverage&COVERAGE={collection_id}&"
-            f"CRS=EPSG:4326&RESPONSE_CRS=EPSG:{srid}&BBOX={min_x},{min_y},{max_x},{max_y}"
-            f"&FORMAT=GeoTIFF&WIDTH={column}&HEIGHT={row}&time={time}"
-        )
+        base_url = f"{self._url}?service=WCS&version=2.0.1&request=GetCoverage&coverageId={collection_id}"
+        base_url += f"&crs=EPSG:{srid}"
+
+        if filter:
+            if "bbox" in filter:
+                bbox = ",".join(map(str, filter["bbox"]))
+                base_url += f"&bbox={bbox}"
+            if "width" in filter and "height" in filter:
+                base_url += f"&width={filter['width']}&height={filter['height']}"
+            if "time" in filter:
+                base_url += f"&time={filter['time']}"
+            if "format" in filter:
+                base_url += f"&format={filter['format']}"
+
+        return base_url
 
     def describe(self, collection_id: str) -> Dict:
         """Obtém o esquema de uma coleção específica.

@@ -29,6 +29,7 @@ class CollectionClient:
     """Represents a specific collection within a data source."""
 
     def __init__(self, datasource: Source, collection_id: str):
+        """Collectionclient init."""
         self._datasource = datasource
         self._collection_id = collection_id
         self._metadata = self._datasource.describe(self._collection_id)
@@ -61,6 +62,8 @@ class CollectionClient:
 
 
 class HARMONIZEDS:
+    """Harmonize Datasources Class."""
+
     manager = DataSourceManager()
 
     @classmethod

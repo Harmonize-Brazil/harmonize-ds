@@ -1,6 +1,6 @@
 ..
     This file is part of Python Client Library for Harmonize Datasources.
-    Copyright (C) 2025 INPE.
+    Copyright (C) 2022 INPE.
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,9 +16,4 @@
     along with this program. If not, see <https://www.gnu.org/licenses/gpl-3.0.html>.
 
 
-=======
-Changes
-=======
-
-Version 0.1.0 (2025-x-x)
---------------------------
+.. include:: ../../CLI.rst

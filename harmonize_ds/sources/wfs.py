@@ -1,7 +1,29 @@
+#
+# This file is part of Python Client Library for the Harmonize Datasources.
+# Copyright (C) 2025 INPE.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/gpl-3.0.html>.
+#
+
+"""Python Client Library for the Harmonize Datasources."""
+
 import gzip
 import json
 from io import BytesIO
 from time import sleep
+from typing import Any, Dict, List, Optional
+from xml.dom import minidom
 
 import geopandas as gpd
 import httpx
@@ -14,16 +36,8 @@ from rich.progress import (BarColumn, DownloadColumn, Progress, TextColumn,
 from shapely.geometry import (LineString, MultiPoint, MultiPolygon, Point,
                               Polygon)
 
-from .base import Source
 from ..utils import Utils
-
-console = Console()
-
-
-from typing import Any, Dict, List, Optional, Tuple, Union
-from xml.dom import minidom
-
-
+from .base import Source
 
 WFS_FORMATS = {
     "shp": "shape-zip",
@@ -32,9 +46,15 @@ WFS_FORMATS = {
     "json": "application/json",
 }
 
+console = Console()
 
 class WFS(Source):
-    """A class that describes a WFS."""
+    """A class that describes a WFS.
+
+    Attributes:
+        source_id (str): Data source identifier.
+        url (str): URL of the WFS service.
+    """
 
     def __init__(self, source_id: str, url: str) -> None:
         """Create a WFS client attached to the given host address.
@@ -91,8 +111,8 @@ class WFS(Source):
 
         return js
 
-    def _extract_epsg_code(srs: str) -> int | None:
-        """Extract epsg code."""
+    def _extract_epsg_code(self, srs: str) -> int | None:
+        """Return epsg code."""
         if srs and "EPSG" in srs:
             try:
                 return int(srs.split(":")[-1])
@@ -101,6 +121,7 @@ class WFS(Source):
         return None
 
     def capabilites(self, ft_name: str):
+        """Get capabilites function."""
         url = f"{self._url}/{self._base_path}&request=GetCapabilities&outputFormat=application/json"
         doc = Utils._get(url)
         tree = etree.fromstring(doc.encode())

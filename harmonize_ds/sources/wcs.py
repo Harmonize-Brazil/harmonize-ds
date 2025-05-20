@@ -19,7 +19,7 @@
 """Python Client Library for the Harmonize Datasources."""
 
 import xml.etree.ElementTree as ET
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from lxml import etree
 
@@ -28,92 +28,99 @@ from .base import Source
 
 
 class WCS(Source):
-    """Cliente Python para acessar serviços GeoServer WFS.
+    """Python client for accessing GeoServer WCS services.
 
     Attributes:
-        source_id (str): Identificador da fonte de dados.
-        url (str): URL do serviço WFS.
+        source_id (str): Data source identifier.
+        url (str): URL of the WFS service.
     """
 
     def __init__(self, source_id: str, url: str) -> None:
-        """Inicializa o cliente WFS com a URL especificada.
+        """Initializes the WCS client with the specified URL.
 
         Args:
-            source_id (str): Identificador único da fonte de dados.
-            url (str): URL do serviço WFS.
+            source_id (str): Unique identifier of the data source.
+            url (str): URL of the WFS service.
         """
         super().__init__(source_id=source_id, url=url)
         self._base_path = "wcs?service=wcs&version=1.1.1"
 
     @property
     def collections(self) -> List[Dict[str, str]]:
-        """Obtém a lista de camadas disponíveis no serviço WFS.
+        """Gets the list of layers available in the WFS service.
 
         Returns:
-            List[Dict[str, str]]: Lista de dicionários com identificador e nome da coleção.
+        List[Dict[str, str]]: List of dictionaries with identifier and collection name.
         """
         return [
             {"id": self._source_id, "collection": layer} for layer in self.list_image()
         ]
 
     def get_type(self) -> str:
-        """Retorna o tipo da fonte de dados.
+        """Returns the data source type.
 
         Returns:
-            str: Tipo da fonte de dados ("WCS").
+            str: Data source type ("WCS").
         """
         return "WCS"
 
+
     def list_image(self) -> List[str]:
-        """Return the list of all available images in the service."""
-        url = f"{self._url}/{self._base_path}&request=GetCapabilities&outputFormat=application/json"
+        """Return available imagens in WCS service."""
+        url = f"{self._url}/{self._base_path}&request=GetCapabilities&outputFormat=application/xml"
 
         try:
             doc = Utils._get(url)
             xmldoc = etree.fromstring(doc.encode("utf-8"))
         except etree.XMLSyntaxError as e:
-            print(f"Error parsing XML: {e}")
+            print(f"Erro ao processar XML: {e}")
             return []
 
         namespaces = {
-            "wcs": "http://www.opengis.net/wcs/2.0",
-            "ows": "http://www.opengis.net/ows/2.0",
+            "wcs": "http://www.opengis.net/wcs/1.1.1",
+            "ows": "http://www.opengis.net/ows/1.1",
         }
-        itemlist = xmldoc.findall(".//wcs:CoverageSummary", namespaces)
 
-        available_images: List[str] = []
-        for coverage_summary in itemlist:
-            coverage_id = coverage_summary.find("wcs:CoverageId", namespaces)
-            if coverage_id is not None and coverage_id.text:
-                available_images.append(coverage_id.text)
+        itemlist = xmldoc.findall(".//wcs:CoverageSummary", namespaces)
+        available_images = [
+            coverage.find("wcs:Identifier", namespaces).text
+            for coverage in itemlist
+            if coverage.find("wcs:Identifier", namespaces) is not None
+        ]
 
         return available_images
 
-    def get_dataset(
+    def get(
         self,
         collection_id: str,
-        srid: int,
-        min_x: float,
-        max_x: float,
-        min_y: float,
-        max_y: float,
-        time: str,
+        filter: Optional[Dict[str, Any]] = None,
+        srid: int = 4326,
     ) -> str:
         """Build the URL to get an image (coverage) from the server based on a GetCoverage request."""
-        return (
-            f"{self._host}/{self._base_path}{self.version}&request=GetCoverage&COVERAGE={collection_id}&"
-            f"CRS=EPSG:4326&RESPONSE_CRS=EPSG:{srid}&BBOX={min_x},{min_y},{max_x},{max_y}"
-            f"&FORMAT=GeoTIFF&WIDTH={column}&HEIGHT={row}&time={time}"
-        )
+        base_url = f"{self._url}?service=WCS&version=2.0.1&request=GetCoverage&coverageId={collection_id}"
+        base_url += f"&crs=EPSG:{srid}"
+
+        if filter:
+            if "bbox" in filter:
+                bbox = ",".join(map(str, filter["bbox"]))
+                base_url += f"&bbox={bbox}"
+            if "width" in filter and "height" in filter:
+                base_url += f"&width={filter['width']}&height={filter['height']}"
+            if "time" in filter:
+                base_url += f"&time={filter['time']}"
+            if "format" in filter:
+                base_url += f"&format={filter['format']}"
+
+        return base_url
 
     def describe(self, collection_id: str) -> Dict:
-        """Obtém o esquema de uma coleção específica.
+        """Gets the schema of a specific collection.
 
         Args:
-            collection_id (str): Identificador da coleção.
+            collection_id (str): Collection identifier.
 
         Returns:
-            Dict: Esquema da coleção.
+            Dict: Collection schema.
         """
         infos = self.getcapabilities(collection_id)
         coverage = self.describe_coverage(collection_id)
@@ -132,6 +139,7 @@ class WCS(Source):
         return metadata
 
     def _extract_bbox(self, coverage_summary, ns):
+        """Extract BBOX."""
         bbox_el = coverage_summary.find("ows:WGS84BoundingBox", ns)
         if bbox_el is not None:
             lower = bbox_el.findtext("ows:LowerCorner", default="", namespaces=ns)

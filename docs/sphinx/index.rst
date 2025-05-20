@@ -1,5 +1,5 @@
 ..
-    This file is part of Python Client Library for Harmonize Datasources.
+    This file is part of Python Client Library for Harmonize DataSources.
     Copyright (C) 2025 INPE.
 
     This program is free software: you can redistribute it and/or modify
@@ -15,10 +15,29 @@
     You should have received a copy of the GNU General Public License
     along with this program. If not, see <https://www.gnu.org/licenses/gpl-3.0.html>.
 
+.. include:: ../../README.rst
+   :end-before: Installation
 
-=======
-Changes
-=======
 
-Version 0.1.0 (2025-x-x)
---------------------------
+Documentation
+=============
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   installation
+   cli
+   examples
+   repository
+   history
+   license
+
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

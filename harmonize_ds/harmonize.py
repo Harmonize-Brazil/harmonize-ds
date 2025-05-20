@@ -26,42 +26,49 @@ from harmonize_ds.sources.base import Source
 
 
 class CollectionClient:
-    """Representa uma coleção específica dentro de uma fonte de dados."""
+    """Represents a specific collection within a data source."""
 
     def __init__(self, datasource: Source, collection_id: str):
+        """Collectionclient init."""
         self._datasource = datasource
         self._collection_id = collection_id
         self._metadata = self._datasource.describe(self._collection_id)
 
     def describe(self) -> Dict[str, str]:
-        """Retorna os metadados da coleção."""
+        """Return the metadata."""
         return self._metadata
 
     @property
     def title(self) -> Optional[str]:
-        """Título da coleção, se disponível."""
+        """Collection Title."""
         return self._metadata.get("title")
 
     @property
     def abstract(self) -> Optional[str]:
-        """Resumo da coleção, se disponível."""
+        """Collection Abstract."""
         return self._metadata.get("abstract")
 
-    def get(self, filter: Optional[Dict[str, Any]] = None):
-        """Obtém os dados da coleção como DataFrame, delegando para a fonte."""
-        return self._datasource.get_dataset(self._collection_id, filter=filter)
+    def get(
+        self,
+        filter: Optional[Dict[str, Any]] = None,
+        srid: int = 4326,
+    ) -> Any:
+        """Gets the data from the collection, delegating to the source."""
+        return self._datasource.get(self._collection_id, filter=filter, srid=srid)
 
     def __repr__(self) -> str:
-        """Representação textual da coleção."""
+        """Collection representation."""
         return f"<CollectionClient title={self.title}, source_id={self._datasource._source_id }, collection_id={self._collection_id}>"
 
 
 class HARMONIZEDS:
+    """Harmonize Datasources Class."""
+
     manager = DataSourceManager()
 
     @classmethod
     def list_collections(cls) -> List[str]:
-        """Retorna uma lista de coleções de todas as fontes de dados."""
+        """Retorn a list of all collections."""
         collections = []
         for datasource in cls.manager.get_datasources():
             collections.extend(datasource.collections)
@@ -69,12 +76,12 @@ class HARMONIZEDS:
 
     @classmethod
     def collections(cls) -> List[str]:
-        """Retorna uma lista de coleções que pode ser iterada diretamente."""
+        """Return a list of collections."""
         return cls.list_collections()  # Retorna diretamente uma lista
 
     @classmethod
     def get_collection(cls, id: str, collection_id: str) -> CollectionClient:
-        """Retorna um CollectionClient para a coleção especificada."""
+        """Return a CollectionClient."""
         datasource = cls.manager.get_datasource_by_id(id)
         if datasource is None:
             raise ValueError(f"Fonte de dados com ID '{id}' não encontrada.")
@@ -83,7 +90,7 @@ class HARMONIZEDS:
 
     @classmethod
     def describe(cls, id: str, collection_id: str) -> dict:
-        """Descrição detalhada de uma coleção específica."""
+        """Describe a specific collection."""
         datasource = cls.manager.get_datasource_by_id(id)
         if datasource is None:
             raise ValueError(f"Fonte de dados com ID '{id}' não encontrada.")
@@ -106,5 +113,5 @@ class HARMONIZEDS:
         gdf.to_file(filename, encoding="utf-8", driver=driver)
 
     def __repr__(self):
-        """Representação em string do serviço Harmonized DS."""
+        """Harmonized DS Representation."""
         return f"<HARMONIZEDS(access_token=None, sources={len(self.manager.get_datasources())})>"

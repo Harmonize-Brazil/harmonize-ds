@@ -21,5 +21,4 @@ from .harmonize import HARMONIZEDS
 from .manager.datasource_manager import DataSourceManager
 from .version import __version__
 
-
 __all__ = ['HARMONIZEDS', 'DataSourceManager', '__version__',]

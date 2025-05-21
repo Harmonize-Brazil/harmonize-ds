@@ -20,5 +20,17 @@
 Changes
 =======
 
-Version 0.1.0 (2025-x-x)
+Version 0.1.0 (2025-05-21)
 --------------------------
+
+
+- Add jupyter notebook (#17)
+- Add changes.rst (#13)
+- Add config.yaml for service management (#12)
+- Add support for geopandas (#11)
+- Add README (#8)
+- Add script examples (#7)
+- Add command line interface enhancement (#5)
+- Add support for integrating multiple data sources(#3)
+- Add support for data recovery via WFS and WCS (#2)
+

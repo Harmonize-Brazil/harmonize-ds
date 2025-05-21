@@ -35,6 +35,12 @@ Python Client Library for Harmonize DataSources
 About
 =====
 
+A Python Library for accessing harmonized spatiotemporal data and retrieving it in a Pandas DataFrame format. The main goal is to provide a tool that simplifies access to multiscale data related to health in critical regions affected by climate change. It integrates datasets such as climate reanalysis, weather forecasts, socioeconomic and demographic data, epidemiological surveillance, and drone imagery.
+
+The client is designed to interact with the Earth Observation Data Cube tuned for Health Response Systems (EODCtHRS), which builds upon the digital infrastructure of the Brazil Data Cube (BDC) from the National Institute for Space Research (INPE), ensuring integration and interoperability between multiple data sources.
+
+The library allows users to list available collections, retrieve metadata, and access filtered data.
+
 Installation
 ============
 

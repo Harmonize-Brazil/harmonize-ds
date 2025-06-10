@@ -24,9 +24,9 @@ print("Available collections:")
 for collection in HARMONIZEDS.collections():
     print(collection)
 
-# Get specific collection
+#Get specific collection
 zica = HARMONIZEDS.get_collection(
-    id="HARMONIZE-WFS", collection_id="bdc_lcc:zika_cases_north_mun_week"
+   id="bdc_lcc-wfs", collection_id="bdc_lcc:zika_cases_north_mun_week"
 )
 
 # Describe operation
@@ -36,15 +36,9 @@ print(metadata_zica)
 print(f"Title: {zica.title}")
 print(f"Abstract: {zica.abstract}")
 
-df = zica.get(filter={"date": "2017-02-26"})
+df = zica.get(filter={
+   "date": "2017-02-01/2017-02-30",
+   'bbox': [-49.15454736, -1.95658217, -48.55769686, -1.69057331]
+   })
+
 print(df.head())
-
-temp = HARMONIZEDS.get_collection(
-    id="HARMONIZE-WCS", collection_id="bdc_lcc:temp_max_NO_mun_month_ras"
-)
-
-print(temp.describe())
-
-temp_ne = HARMONIZEDS.get_collection(id="HARMONIZE-WCS", collection_id="bdc_lcc:temp_max_NE_mun_epiweek_ras")
-image_url = temp_ne.get(filter={'time': "2018-12-30"}, srid=4326)
-print(f"Download URL: {image_url}")

@@ -19,9 +19,7 @@
 """Python Client Library for the Harmonize Datasources."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union
-
-import geopandas as gpd
+from typing import Any, Dict, Optional
 
 
 class Source(ABC):
@@ -63,7 +61,7 @@ class Source(ABC):
             Dict: A dictionary with the collection metadata.
         """
         pass
-    
+
     def get(
         self,
         collection_id: str,

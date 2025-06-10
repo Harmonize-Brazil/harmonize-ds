@@ -27,7 +27,7 @@ Development Installation
 
 Clone the Software Repository::
 
-    git clone https://github.com/Harmonize-Brazil/harmonize_ds.git
+    git clone https://github.com/Harmonize-Brazil/harmonize-ds.git
 
 
 Go to the source code folder::

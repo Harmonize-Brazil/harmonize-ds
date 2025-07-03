@@ -20,6 +20,15 @@
 Changes
 =======
 
+Version 0.2.0 (2025-07-03)
+--------------------------
+
+- Bug fixed: Get feature using bbox (#22)
+- Documentation: Fix the wrong names of functions and methods in the jupyter notebook example (#21)
+- Documentation: Fix the repository address at the Install.rst (#20)
+- Review command line options
+- Review sources config
+
 Version 0.1.0 (2025-05-21)
 --------------------------
 

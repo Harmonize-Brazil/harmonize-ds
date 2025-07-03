@@ -64,7 +64,6 @@ class WCS(Source):
         """
         return "WCS"
 
-
     def list_image(self) -> List[str]:
         """Return available imagens in WCS service."""
         url = f"{self._url}/{self._base_path}&request=GetCapabilities&outputFormat=application/xml"
@@ -75,19 +74,24 @@ class WCS(Source):
         except etree.XMLSyntaxError as e:
             print(f"Erro ao processar XML: {e}")
             return []
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return []
 
-        namespaces = {
+        ns = {
             "wcs": "http://www.opengis.net/wcs/1.1.1",
             "ows": "http://www.opengis.net/ows/1.1",
         }
 
-        itemlist = xmldoc.findall(".//wcs:CoverageSummary", namespaces)
-        available_images = [
-            coverage.find("wcs:Identifier", namespaces).text
-            for coverage in itemlist
-            if coverage.find("wcs:Identifier", namespaces) is not None
-        ]
+        itemlist = xmldoc.findall(".//wcs:CoverageSummary", namespaces=ns)
 
+        available_images: List[str] = []
+        for coverage_summary in itemlist:
+            identifier = coverage_summary.find("wcs:Identifier", namespaces=ns)
+            if identifier is None:
+                identifier = coverage_summary.find("ows:Title", namespaces=ns)
+            if identifier is not None and identifier.text:
+                available_images.append(identifier.text)
         return available_images
 
     def get(
@@ -188,36 +192,67 @@ class WCS(Source):
         raise ValueError(f"Coverage '{collection_id}' not found in GetCapabilities.")
 
     def describe_coverage(self, collection_id: str) -> Dict[str, Any]:
-        """Describe Coverage."""
-        url = f"{self._url}/{self._base_path}&request=DescribeCoverage&identifiers={collection_id}"
+        """Describe Coverage for WCS 2.0.1."""
+        normalized_id = collection_id.replace(":", "__")
+
+        url = f"{self._url}/ows?service=WCS&version=2.0.1&request=DescribeCoverage&coverageId={normalized_id}"
 
         response = Utils._get(url)
 
         root = ET.fromstring(response)
+
         ns = {
-            "wcs": "http://www.opengis.net/wcs/1.1.1",
-            "ows": "http://www.opengis.net/ows/1.1",
+            "wcs": "http://www.opengis.net/wcs/2.0",
+            "ows": "http://www.opengis.net/ows/2.0",
+            "gml": "http://www.opengis.net/gml/3.2",
+            "gmlcov": "http://www.opengis.net/gmlcov/1.0",
+            "wcsgs": "http://www.geoserver.org/wcsgs/2.0",
         }
 
-        coverage_el = root.find(".//wcs:CoverageDescription", ns)
+        coverage_el = root.find("wcs:CoverageDescription", ns)
         if coverage_el is None:
             raise ValueError(
                 "CoverageDescription not found in DescribeCoverage response"
             )
 
-        supported_crs = [el.text for el in root.findall(".//wcs:SupportedCRS", ns)]
-        timepositions = [
-            el.text for el in root.findall(".//wcs:TemporalDomain/wcs:timePosition", ns)
+        coverage_id = coverage_el.findtext("wcs:CoverageId", namespaces=ns)
+        title = coverage_el.findtext("gml:name", namespaces=ns)
+        description = coverage_el.findtext("gml:description", namespaces=ns)
+
+        keywords = [
+            k.text for k in coverage_el.findall(".//ows:Keyword", namespaces=ns)
+        ]
+
+        bbox_el = coverage_el.find(".//gml:EnvelopeWithTimePeriod", ns)
+        if bbox_el is not None:
+            lower_corner = bbox_el.findtext("gml:lowerCorner", namespaces=ns)
+            upper_corner = bbox_el.findtext("gml:upperCorner", namespaces=ns)
+            crs = bbox_el.attrib.get("srsName")
+            bbox = {
+                "lowerCorner": list(map(float, lower_corner.split())),
+                "upperCorner": list(map(float, upper_corner.split())),
+                "crs": crs,
+            }
+        else:
+            bbox = {}
+
+        # Lista de posições temporais individuais
+        time_positions = [
+            el.text for el in coverage_el.findall(".//gml:timePosition", ns)
         ]
 
         timelimits = (
-            (min(timepositions), max(timepositions)) if timepositions else (None, None)
+            (min(time_positions), max(time_positions))
+            if time_positions
+            else (None, None)
         )
 
-        dic = {
-            "supportedCRS": supported_crs,
-            "timepositions": timepositions,
+        return {
+            "id": coverage_id,
+            "title": title,
+            "abstract": description,
+            "keywords": keywords,
+            "bbox": bbox,
+            "timepositions": time_positions,
             "timelimits": timelimits,
         }
-
-        return dic

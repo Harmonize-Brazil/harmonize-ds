@@ -30,11 +30,16 @@ import httpx
 import pyproj
 from lxml import etree
 from rich.console import Console
-from rich.progress import (BarColumn, DownloadColumn, Progress, TextColumn,
-                           TimeElapsedColumn, TimeRemainingColumn,
-                           TransferSpeedColumn)
-from shapely.geometry import (LineString, MultiPoint, MultiPolygon, Point,
-                              Polygon)
+from rich.progress import (
+    BarColumn,
+    DownloadColumn,
+    Progress,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+    TransferSpeedColumn,
+)
+from shapely.geometry import LineString, MultiPoint, MultiPolygon, Point, Polygon
 
 from ..utils import Utils
 from .base import Source
@@ -47,6 +52,7 @@ WFS_FORMATS = {
 }
 
 console = Console()
+
 
 class WFS(Source):
     """A class that describes a WFS.
@@ -111,15 +117,6 @@ class WFS(Source):
 
         return js
 
-    def _extract_epsg_code(self, srs: str) -> int | None:
-        """Return epsg code."""
-        if srs and "EPSG" in srs:
-            try:
-                return int(srs.split(":")[-1])
-            except ValueError:
-                return None
-        return None
-
     def capabilites(self, ft_name: str):
         """Get capabilites function."""
         url = f"{self._url}/{self._base_path}&request=GetCapabilities&outputFormat=application/json"
@@ -134,7 +131,7 @@ class WFS(Source):
         feature_el = tree.find(xpath_expr, namespaces=ns)
 
         if feature_el is None:
-            raise ValueError("Feature not found in capabilities") 
+            raise ValueError("Feature not found in capabilities")
 
         return {
             "name": ft_name,
@@ -151,13 +148,13 @@ class WFS(Source):
             },
         }
 
-    def describe(self, ft_name: str) -> Dict[str, Any]:
+    def describe(self, collection_id: str) -> Dict[str, Any]:
         """Return metadata about a specific feature type."""
-        if not ft_name:
+        if not collection_id:
             raise ValueError("Missing feature name.")
 
-        js = self.describe_feature(ft_name)
-        capabilites = self.capabilites(ft_name)
+        js = self.describe_feature(collection_id)
+        capabilites = self.capabilites(collection_id)
 
         ft_info = js["featureTypes"][0]
         feature = {
@@ -168,7 +165,7 @@ class WFS(Source):
             "title": capabilites["title"],
             "abstract": capabilites["abstract"],
             "bbox": capabilites["bbox"],
-            "ft_name": ft_name,
+            "ft_name": collection_id,
         }
 
         supported_geometries = {"gml:MultiPolygon", "gml:Point", "gml:Polygon"}
@@ -185,12 +182,12 @@ class WFS(Source):
 
         return feature
 
-    
     def get(
         self,
         collection_id: str,
         filter: Optional[Dict[str, Any]] = None,
         srid: int = 4326,
+        geometry_column: str = "geom",
     ) -> gpd.GeoDataFrame:
         """Return features from a specific feature type with pagination and progress bar."""
         if not collection_id:
@@ -202,25 +199,28 @@ class WFS(Source):
             f"{self._url}/{self._base_path}&request=GetFeature&typeName={collection_id}"
             f"&outputFormat={output_format}&srsName=EPSG:{srid}"
         )
+        clauses = []
 
         if filter:
             if "bbox" in filter:
-                bbox = ",".join(map(str, filter["bbox"]))
-                base_url += f"&bbox={bbox}"
+                minx, miny, maxx, maxy = filter["bbox"]
+
+                clauses.append(
+                    f"BBOX({geometry_column}, {minx}, {miny}, {maxx}, {maxy}, 'EPSG:{srid}')"
+                )
 
             if "date" in filter:
-                clauses = []
                 date_value = filter["date"]
                 if "/" in date_value:
                     start, end = date_value.split("/")
-                    clause = f"date BETWEEN '{start}' AND '{end}'"
+                    clauses.append(f"date BETWEEN '{start}' AND '{end}'")
                 else:
-                    clause = f"date = '{date_value}'"
-                clauses.append(clause)
+                    clauses.append(f"date = '{date_value}'")
 
+            if clauses:
                 cql_filter = " AND ".join(clauses)
-
                 base_url += f"&cql_filter={cql_filter}"
+
         all_features = []
         start_index = 0
         total_received = 0
@@ -229,9 +229,7 @@ class WFS(Source):
         with console.status("[bold green]Starting downloads...") as status:
             while True:
                 page_url = f"{base_url}&startIndex={start_index}&count={page_size}"
-                status.update(
-                    f"[bold cyan]Download data {start_index}..."
-                )
+                status.update(f"[bold cyan]Download data {start_index}...")
                 sleep(1)
 
                 doc = Utils._get(page_url)
@@ -256,6 +254,9 @@ class WFS(Source):
             fc = dict()
 
             fc["features"] = []
+
+            if not all_features:
+                return gpd.GeoDataFrame()
 
             for item in all_features:
                 if item["geometry"]["type"] == "Point":
@@ -295,12 +296,9 @@ class WFS(Source):
 
             fc["crs"] = data["crs"]
 
-            console.log(
-                f"[bold green]✅ Total features received: {len(all_features)}"
-            )
+            console.log(f"[bold green]✅ Total features received: {len(all_features)}")
 
             df_obs = gpd.GeoDataFrame.from_dict(fc["features"])
-
 
             df_dataset_data = df_obs.set_geometry(col="geom", crs=f"EPSG:{srid}")
 

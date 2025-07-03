@@ -19,24 +19,24 @@
 Running Harmonize Datasources Client in the Command Line
 ========================================================
 
-The ``Harmonize Datasources`` client installs a command line tool named ``harmonize_ds`` that allows to retrieve trajectory data.
+The ``Harmonize Datasources`` client installs a command line tool named ``harmonizeds-cli`` that allows to retrieve trajectory data.
 
 
 If you want to know the Harmonize Datasources version, use the option ``--version`` as in::
 
-    harmonize_ds --version
+    harmonizeds-cli --version
 
 
 List the available collections::
 
-    harmonize_ds collections 
+    harmonizeds-cli collections 
 
 
 To get more information about a specific collection, use the ``describe`` command::
 
-    harmonize_ds describe --id 'HARMONIZE-WFS' --collection_id 'bdc_lcc:anomaly_cdays_temp_max_ne_mun_epiweek'
+    harmonizeds-cli describe --id 'bdc_lcc-wfs' --collection_id 'bdc_lcc:anomaly_cdays_temp_max_ne_mun_epiweek'
 
 
 Retrieve the trajectory given a longitude and latitude::
 
-    harmonize-ds download --collection_id 'bdc_lcc:zika_cases_north_mun_week' --id 'HARMONIZE-WFS' --filename '/path/obs.shp' --filter '{"date": "2017-01-01"}' --verbose
+    harmonize-ds download --collection_id 'bdc_lcc:zika_cases_north_mun_week' --id 'bdc_lcc-wfs' --filename '/path/obs.shp' --filter '{"date": "2017-01-01"}' --verbose

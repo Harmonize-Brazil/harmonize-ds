@@ -28,7 +28,7 @@ from rich.tree import Tree
 
 from .harmonize import HARMONIZEDS
 
-
+# pylint: disable=too-few-public-methods
 class Config:
     """A simple decorator class for command line options."""
 
@@ -45,7 +45,7 @@ console = Console()
 @click.group()
 @click.version_option()
 @pass_config
-def cli(config):
+def cli(config): # pylint: disable=unused-argument
     """HARMONIZE DataSources Client on command line."""
     config.service = HARMONIZEDS
 
@@ -71,7 +71,7 @@ def collections(config: Config, verbose):
 
     panel = Panel(
         table,
-        title=f"[bold green]Harmonize Datasources[/bold green]",
+        title="[bold green]Harmonize Datasources[/bold green]",
         expand=False,
         border_style="bright_blue",
     )
@@ -87,9 +87,14 @@ def collections(config: Config, verbose):
     "-c", "--collection_id", required=True, type=str, help="The collection identifier"
 )
 @click.option("-i", "--id", required=True, type=str, help="The datasource id")
+@click.option("-v", "--time", is_flag=True, default=False)
 @pass_config
-def describe(config: Config, verbose, collection_id, id):
+def describe(config: Config, verbose, collection_id, id, time):
     """Describe a collection by its source ID and collection ID."""
+    if verbose:
+        console.print(
+            "[black]\tGet Collection Describe...[/black]"
+        )
     collection = config.service.get_collection(
         id=id, collection_id=collection_id
     ).describe()
@@ -109,27 +114,29 @@ def describe(config: Config, verbose, collection_id, id):
     )
     general_table.add_row(
         "Default CRS",
-        ", ".join(
-            map(str, collection.get("default_srs", collection.get("supportedCRS", [])))
-        ),
+        ", ".join(map(str, collection.get("supportedCRS") or [])),
     )
 
     # BBOX
     bbox = collection.get("wgs84_bbox", {})
     if isinstance(bbox, dict):
-        lower = bbox.get("lower_corner", "")
-        upper = bbox.get("upper_corner", "")
+        lower = bbox.get("lower", "")
+        upper = bbox.get("upper", "")
     elif isinstance(bbox, (list, tuple)) and len(bbox) == 4:
         lower = f"{bbox[0]} {bbox[1]}"
         upper = f"{bbox[2]} {bbox[3]}"
     else:
-        lower = upper = "N/A"
+        lower = upper = [0, 0]
 
-    bbox_table = Table.grid(padding=(0, 1))
-    bbox_table.add_column(style="bold cyan")
-    bbox_table.add_column()
-    bbox_table.add_row("Lower Corner", lower)
-    bbox_table.add_row("Upper Corner", upper)
+    bbox_table = Table(
+        title="Bounding Box (WGS 84)", show_header=True, header_style="bold magenta"
+    )
+    bbox_table.add_column("Corner", justify="center")
+    bbox_table.add_column("Longitude", justify="right")
+    bbox_table.add_column("Latitude", justify="right")
+
+    bbox_table.add_row("Lower", f"{lower[0]:.6f}", f"{lower[1]:.6f}")
+    bbox_table.add_row("Upper", f"{upper[0]:.6f}", f"{upper[1]:.6f}")
 
     schema_tree = Tree("[bold magenta]Schema")
     schema = collection.get("schema", {})
@@ -150,8 +157,12 @@ def describe(config: Config, verbose, collection_id, id):
     time_tree = Tree("[bold magenta]Time Information")
     if "timelimits" in collection:
         time_tree.add(f"[green]Time Limits[/green]: {collection['timelimits']}")
-    if "timepositions" in collection:
-        time_tree.add(f"[green]Time Positions[/green]: {collection['timepositions']}")
+
+    if time:
+        if "timepositions" in collection:
+            time_tree.add(
+                f"[green]Time Positions[/green]: {collection['timepositions']}"
+            )
 
     console.print(
         Panel(general_table, title="[bold green]General Info", border_style="blue")

@@ -16,24 +16,22 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 """Python Client Library for the Harmonize DataSources."""
+import importlib.resources as resources
 import re
-from importlib.resources import files
 from typing import Any, Dict, Optional, Tuple, Union
 
 import httpx
 import jinja2
 from jsonschema import RefResolver, validate
-from pkg_resources import resource_filename
 
-base_schemas_path = resource_filename(__name__, "jsonschemas/")
 templateLoader = jinja2.FileSystemLoader(
-    searchpath=resource_filename(__name__, "templates/")
+    searchpath=str(resources.files(__package__) / "templates")
 )
 templateEnv = jinja2.Environment(loader=templateLoader)
 
 
 class Utils:
-    """Utilities class for interacting with LCCS-WS."""
+    """Utilities class for interacting with Harmonize DS."""
 
     @staticmethod
     def _get(
@@ -61,7 +59,9 @@ class Utils:
             if content_type == "application/octet-stream":
                 content_disposition = response.headers.get("content-disposition", "")
                 try:
-                    file_name = re.findall(r'filename="?(.*?)"?$', content_disposition)[0]
+                    file_name = re.findall(r'filename="?(.*?)"?$', content_disposition)[
+                        0
+                    ]
                 except IndexError as exc:
                     raise ValueError(
                         "Error extracting file name from Content-Disposition header."
@@ -73,14 +73,13 @@ class Utils:
                 "application/geo+json",
                 "application/xml",
                 "text/xml; charset=utf-8",
-                "application/json;charset=UTF-8"
+                "application/json;charset=UTF-8",
             ):
                 raise ValueError(
                     f"HTTP response is not JSON or XML: Content-Type: {content_type}"
                 )
 
         return response.text
-
 
     @staticmethod
     def _post(
@@ -161,19 +160,7 @@ class Utils:
         return response
 
     @staticmethod
-    def validate(lccs_object):
-        """Validate a lucc Object using its jsonschemas."""
-        resolver = RefResolver("file://{}{}/".format(base_schemas_path, lccs_object))
-
-        validate(lccs_object, lccs_object._schema, resolver=resolver)
-
-    @staticmethod
     def render_html(template_name, **kwargs):
         """Render Jinja2 HTML template."""
         template = templateEnv.get_template(template_name)
         return template.render(**kwargs)
-
-    @staticmethod
-    def get_id_by_name(name, classes):
-        """Get id of class."""
-        return list(filter(lambda x: x.name == name, classes))[0]["id"]

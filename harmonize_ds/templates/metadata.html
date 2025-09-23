@@ -1,0 +1,96 @@
+<div style="font-family: monospace; border: 2px solid #444; border-radius: 8px; padding: 10px; margin: 10px;">
+  <!-- General Info -->
+  <div style="text-align: center; font-weight: bold; margin-bottom: 8px;">General Info</div>
+  <table style="border-collapse: collapse; width: 100%; font-size: 13px; color: inherit; margin-bottom: 12px;">
+    <tr>
+      <th style="border: 1px solid currentColor; padding: 6px; text-align: left;">Title</th>
+      <td style="border: 1px solid currentColor; padding: 6px;">{{ metadata.title }}</td>
+    </tr>
+    <tr>
+      <th style="border: 1px solid currentColor; padding: 6px; text-align: left;">Abstract</th>
+      <td style="border: 1px solid currentColor; padding: 6px;">{{ metadata.abstract or "N/A" }}</td>
+    </tr>
+    <tr>
+      <th style="border: 1px solid currentColor; padding: 6px; text-align: left;">Name</th>
+      <td style="border: 1px solid currentColor; padding: 6px;">{{ metadata.name }}</td>
+    </tr>
+    <tr>
+      <th style="border: 1px solid currentColor; padding: 6px; text-align: left;">Namespace</th>
+      <td style="border: 1px solid currentColor; padding: 6px;">{{ metadata.namespace }}</td>
+    </tr>
+    <tr>
+      <th style="border: 1px solid currentColor; padding: 6px; text-align: left;">Full Name</th>
+      <td style="border: 1px solid currentColor; padding: 6px;">{{ metadata.full_name }}</td>
+    </tr>
+  </table>
+
+  <!-- Bounding Box -->
+  {% if metadata.bbox %}
+  <div style="text-align: center; font-weight: bold; margin-bottom: 4px;">Bounding Box (WGS84)</div>
+  <table style="border-collapse: collapse; width: 100%; font-size: 13px; color: inherit; margin-bottom: 12px;">
+    <thead style="background-color: rgba(128,128,128,0.2);">
+      <tr>
+        <th style="border: 1px solid currentColor; padding: 6px;">Corner</th>
+        <th style="border: 1px solid currentColor; padding: 6px;">Longitude</th>
+        <th style="border: 1px solid currentColor; padding: 6px;">Latitude</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set lower_lon, lower_lat = metadata.bbox.lower.split(" ") %}
+      {% set upper_lon, upper_lat = metadata.bbox.upper.split(" ") %}
+      <tr>
+        <td style="border: 1px solid currentColor; padding: 6px;">Lower</td>
+        <td style="border: 1px solid currentColor; padding: 6px;">{{ "%.6f"|format(lower_lon|float) }}</td>
+        <td style="border: 1px solid currentColor; padding: 6px;">{{ "%.6f"|format(lower_lat|float) }}</td>
+      </tr>
+      <tr>
+        <td style="border: 1px solid currentColor; padding: 6px;">Upper</td>
+        <td style="border: 1px solid currentColor; padding: 6px;">{{ "%.6f"|format(upper_lon|float) }}</td>
+        <td style="border: 1px solid currentColor; padding: 6px;">{{ "%.6f"|format(upper_lat|float) }}</td>
+      </tr>
+    </tbody>
+  </table>
+  {% endif %}
+
+  <!-- Attributes / Schema -->
+  {% if metadata.attributes %}
+  <div style="text-align: center; font-weight: bold; margin-bottom: 4px;">Attributes / Schema</div>
+  <table style="border-collapse: collapse; width: 100%; font-size: 13px; color: inherit; margin-bottom: 12px;">
+    <thead style="background-color: rgba(128,128,128,0.2);">
+      <tr>
+        <th style="border: 1px solid currentColor; padding: 6px;">Name</th>
+        <th style="border: 1px solid currentColor; padding: 6px;">Local Type</th>
+        <th style="border: 1px solid currentColor; padding: 6px;">Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for attr in metadata.attributes %}
+      <tr>
+        <td style="border: 1px solid currentColor; padding: 6px;">{{ attr.name }}</td>
+        <td style="border: 1px solid currentColor; padding: 6px;">{{ attr.localtype }}</td>
+        <td style="border: 1px solid currentColor; padding: 6px;">{{ attr.type }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <!-- Geometry -->
+  {% if metadata.geometry %}
+  <div style="text-align: center; font-weight: bold;">Geometry</div>
+  <table style="border-collapse: collapse; width: 100%; font-size: 13px; color: inherit; margin-bottom: 6px;">
+    <tr>
+      <th style="border: 1px solid currentColor; padding: 6px; text-align: left;">Name</th>
+      <td style="border: 1px solid currentColor; padding: 6px;">{{ metadata.geometry.name }}</td>
+    </tr>
+    <tr>
+      <th style="border: 1px solid currentColor; padding: 6px; text-align: left;">Local Type</th>
+      <td style="border: 1px solid currentColor; padding: 6px;">{{ metadata.geometry.localtype }}</td>
+    </tr>
+    <tr>
+      <th style="border: 1px solid currentColor; padding: 6px; text-align: left;">Type</th>
+      <td style="border: 1px solid currentColor; padding: 6px;">{{ metadata.geometry.type }}</td>
+    </tr>
+  </table>
+  {% endif %}
+</div>

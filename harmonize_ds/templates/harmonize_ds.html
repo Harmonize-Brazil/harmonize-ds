@@ -1,0 +1,63 @@
+<div style="font-family: monospace; border: 2px solid #444; border-radius: 8px; padding: 10px; margin: 10px;">
+  <div style="text-align: center; font-weight: bold; margin-bottom: 8px;">Harmonize Datasources</div>
+  <div style="text-align: center; font-style: italic; margin-bottom: 12px;">Available Collections</div>
+
+  <div style="margin-bottom: 6px; text-align: center;">
+    Rows per page:
+    <select id="page-size-select">
+      <option value="5" selected>5</option>
+      <option value="10">10</option>
+      <option value="20">20</option>
+      <option value="50">50</option>
+    </select>
+  </div>
+
+  <table id="collections-table" style="border-collapse: collapse; width: 100%; font-size: 13px; color: inherit;">
+    <thead style="background-color: rgba(128,128,128,0.2);">
+      <tr>
+        <th style="border: 1px solid currentColor; padding: 6px; text-align: left;">Id</th>
+        <th style="border: 1px solid currentColor; padding: 6px; text-align: left;">Collection</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cl in collections %}
+      <tr style="display:none;">
+        <td style="border: 1px solid currentColor; padding: 6px;">{{ cl.id }}</td>
+        <td style="border: 1px solid currentColor; padding: 6px;">{{ cl.collection }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="margin-top: 6px; text-align: center;">
+    <button id="prev-btn">« Prev</button>
+    <span id="page-info"></span>
+    <button id="next-btn">Next »</button>
+  </div>
+</div>
+
+<script>
+(function() {
+    const table = document.getElementById('collections-table');
+    const rows = Array.from(table.tBodies[0].rows);
+    const pageSizeSelect = document.getElementById('page-size-select');
+
+    let pageSize = parseInt(pageSizeSelect.value);
+    let currentPage = 1;
+
+    function showPage(page) {
+        currentPage = page;
+        const start = (currentPage-1) * pageSize;
+        const end = start + pageSize;
+        rows.forEach((row, i) => row.style.display = (i >= start && i < end) ? '' : 'none');
+        const totalPages = Math.ceil(rows.length / pageSize);
+        document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages}`;
+    }
+
+    document.getElementById('prev-btn').onclick = () => { if(currentPage > 1) showPage(currentPage-1); };
+    document.getElementById('next-btn').onclick = () => { const totalPages = Math.ceil(rows.length / pageSize); if(currentPage < totalPages) showPage(currentPage+1); };
+    pageSizeSelect.onchange = () => { pageSize = parseInt(pageSizeSelect.value); currentPage = 1; showPage(currentPage); };
+
+    showPage(1);
+})();
+</script>

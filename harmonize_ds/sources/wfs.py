@@ -18,28 +18,16 @@
 
 """Python Client Library for the Harmonize Datasources."""
 
-import gzip
 import json
-from io import BytesIO
 from time import sleep
 from typing import Any, Dict, List, Optional
 from xml.dom import minidom
 
 import geopandas as gpd
-import httpx
-import pyproj
 from lxml import etree
 from rich.console import Console
-from rich.progress import (
-    BarColumn,
-    DownloadColumn,
-    Progress,
-    TextColumn,
-    TimeElapsedColumn,
-    TimeRemainingColumn,
-    TransferSpeedColumn,
-)
-from shapely.geometry import LineString, MultiPoint, MultiPolygon, Point, Polygon
+from shapely.geometry import (LineString, MultiPoint, MultiPolygon, Point,
+                              Polygon)
 
 from ..utils import Utils
 from .base import Source

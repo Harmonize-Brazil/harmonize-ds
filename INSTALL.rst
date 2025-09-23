@@ -19,7 +19,14 @@
 Installation
 ============
 
-``harmonize_ds`` depends essentially on `Requests <https://requests.readthedocs.io/en/master/>`_. Please, read the instructions below in order to install ``harmonize_ds``.
+Please, read the instructions below in order to install ``harmonize_ds``.
+
+Production Installation
+------------------------
+
+Install via pypi::
+
+    pip install harmonize-ds
 
 
 Development Installation
@@ -56,9 +63,8 @@ Install in development mode::
 
     **3.** Update pip and setuptools::
 
-        pip3 install --upgrade pip
+        pip3 install --upgrade pip setuptools wheel
 
-        pip3 install --upgrade setuptools
 
 Run the Tests
 +++++++++++++

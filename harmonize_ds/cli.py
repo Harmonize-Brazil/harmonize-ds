@@ -28,6 +28,7 @@ from rich.tree import Tree
 
 from .harmonize import HARMONIZEDS
 
+
 # pylint: disable=too-few-public-methods
 class Config:
     """A simple decorator class for command line options."""
@@ -87,7 +88,7 @@ def collections(config: Config, verbose):
     "-c", "--collection_id", required=True, type=str, help="The collection identifier"
 )
 @click.option("-i", "--id", required=True, type=str, help="The datasource id")
-@click.option("-v", "--time", is_flag=True, default=False)
+@click.option("-t", "--time", is_flag=True, default=False)
 @pass_config
 def describe(config: Config, verbose, collection_id, id, time):
     """Describe a collection by its source ID and collection ID."""
@@ -97,36 +98,43 @@ def describe(config: Config, verbose, collection_id, id, time):
         )
     collection = config.service.get_collection(
         id=id, collection_id=collection_id
-    ).describe()
+    )
 
-    if not collection:
+    metadata = collection.describe()
+
+    if not metadata:
         console.print(f"[bold red]Collection '{collection_id}' not found.[/bold red]")
         return
 
     general_table = Table.grid(padding=(0, 1))
     general_table.add_column(style="bold cyan", no_wrap=True)
     general_table.add_column()
-    general_table.add_row("Title", str(collection.get("title", "")))
-    general_table.add_row("Abstract", str(collection.get("abstract", "")))
-    general_table.add_row("Name", str(collection.get("name", "")))
+    general_table.add_row("Title", str(metadata.get("title", "")))
+    general_table.add_row("Abstract", str(metadata.get("abstract", "")))
+    general_table.add_row("Name", str(metadata.get("name", "")))
     general_table.add_row(
-        "Keywords", ", ".join(map(str, collection.get("keywords", [])))
+        "Keywords", ", ".join(map(str, metadata.get("keywords", [])))
     )
     general_table.add_row(
         "Default CRS",
-        ", ".join(map(str, collection.get("supportedCRS") or [])),
+        ", ".join(map(str, metadata.get("supportedCRS") or [])),
     )
 
-    # BBOX
-    bbox = collection.get("wgs84_bbox", {})
+    bbox = metadata.get("bbox", {})
     if isinstance(bbox, dict):
-        lower = bbox.get("lower", "")
-        upper = bbox.get("upper", "")
+        def parse_pair(value: str):
+            if isinstance(value, str):
+                return tuple(map(float, value.split()))
+            return tuple(value) 
+
+        lower = parse_pair(bbox.get("lower", "0 0"))
+        upper = parse_pair(bbox.get("upper", "0 0"))
+
     elif isinstance(bbox, (list, tuple)) and len(bbox) == 4:
-        lower = f"{bbox[0]} {bbox[1]}"
-        upper = f"{bbox[2]} {bbox[3]}"
+        lower = (bbox[0], bbox[1])
+        upper = (bbox[2], bbox[3])
     else:
-        lower = upper = [0, 0]
+        lower = upper = (0.0, 0.0)
 
     bbox_table = Table(
         title="Bounding Box (WGS 84)", show_header=True, header_style="bold magenta"
@@ -139,14 +147,14 @@ def describe(config: Config, verbose, collection_id, id, time):
     bbox_table.add_row("Upper", f"{upper[0]:.6f}", f"{upper[1]:.6f}")
 
     schema_tree = Tree("[bold magenta]Schema")
-    schema = collection.get("schema", {})
+    schema = metadata.get("schema", {})
     if schema:
         for key, value in schema.items():
             schema_tree.add(f"[green]{key}[/green]: [white]{value}[/white]")
     else:
         schema_tree.add("[dim]No schema available[/dim]")
 
-    geometry = collection.get("geometry", {})
+    geometry = metadata.get("geometry", {})
     geom_tree = Tree("[bold magenta]Geometry")
     if geometry:
         for k, v in geometry.items():
@@ -155,7 +163,7 @@ def describe(config: Config, verbose, collection_id, id, time):
         geom_tree.add("[dim]No geometry information[/dim]")
 
     time_tree = Tree("[bold magenta]Time Information")
-    if "timelimits" in collection:
+    if "timelimits" in metadata:
         time_tree.add(f"[green]Time Limits[/green]: {collection['timelimits']}")
 
     if time:
@@ -172,7 +180,7 @@ def describe(config: Config, verbose, collection_id, id, time):
     )
     console.print(schema_tree)
     console.print(geom_tree)
-    if "timelimits" in collection or "timepositions" in collection:
+    if "timelimits" in metadata or "timepositions" in metadata:
         console.print(time_tree)
 
     console.print("[black]\tFinished![/black]")

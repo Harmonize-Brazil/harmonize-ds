@@ -38,4 +38,6 @@ recursive-include tests *.py
 recursive-include tests *.json
 recursive-include harmonize_ds *.html
 recursive-include harmonize_ds *.yaml
+recursive-include harmonize_ds/templates *.html
+recursive-include harmonize_ds/jsonschemas *.json
 

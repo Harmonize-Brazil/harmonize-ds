@@ -23,6 +23,19 @@ import pandas as pd
 
 from harmonize_ds.manager.datasource_manager import DataSourceManager
 from harmonize_ds.sources.base import Source
+from harmonize_ds.utils import Utils
+
+
+class CollectionsView(list):
+    """Wrapper for collections with custom repr for Jupyter."""
+
+    def __repr__(self):
+        """Represents a text."""
+        return f"CollectionsView({list.__repr__(self)})"
+
+    def _repr_html_(self):
+        """Represents (Jupyter/IPython)."""
+        return Utils.render_html("harmonize_ds.html", collections=self)
 
 
 class CollectionClient:
@@ -60,6 +73,11 @@ class CollectionClient:
         """Collection representation."""
         return f"<CollectionClient title={self.title}, source_id={self._datasource._source_id }, collection_id={self._collection_id}>"
 
+    def _repr_html_(self):
+        """Render collection metadata as HTML in Jupyter Notebook."""
+        html = Utils.render_html("metadata.html", metadata=self._metadata)
+        return html
+
 
 class HARMONIZEDS:
     """Harmonize Datasources Class."""
@@ -67,7 +85,7 @@ class HARMONIZEDS:
     manager = DataSourceManager()
 
     @classmethod
-    def list_collections(cls) -> List[str]:
+    def _list_collections(cls) -> List[str]:
         """Retorn a list of all collections."""
         collections = []
         for datasource in cls.manager.get_datasources():
@@ -75,9 +93,9 @@ class HARMONIZEDS:
         return collections
 
     @classmethod
-    def collections(cls) -> List[str]:
-        """Return a list of collections."""
-        return cls.list_collections()  # Retorna diretamente uma lista
+    def collections(cls) -> CollectionsView:
+        """Return collections wrapped in CollectionsView."""
+        return CollectionsView(cls._list_collections())
 
     @classmethod
     def get_collection(cls, id: str, collection_id: str) -> CollectionClient:
@@ -112,6 +130,11 @@ class HARMONIZEDS:
         """
         gdf.to_file(filename, encoding="utf-8", driver=driver)
 
-    def __repr__(self):
-        """Harmonized DS Representation."""
-        return f"<HARMONIZEDS(access_token=None, sources={len(self.manager.get_datasources())})>"
+    def _repr_html_(self):
+        """Display the HarmonizeDS object as HTML."""
+        cl_list = self._list_collections()
+
+        cl_list_dict = [{"id": cl.id, "collection": cl.collection} for cl in cl_list]
+
+        html = Utils.render_html("harmonize_ds.html", collections=cl_list_dict)
+        return html

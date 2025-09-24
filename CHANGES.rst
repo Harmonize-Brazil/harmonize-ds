@@ -20,6 +20,17 @@
 Changes
 =======
 
+Version 0.4.0 (2025-09-24)
+--------------------------
+
+- Added jinja templates for integration with Jupyter. (#6)
+- Added wlts.py dependency. (#10)
+- Remove Warning: pkg_resources is deprecated as an API. (#25)
+- Added a minimal test struct. (#26)
+- Prepare package to add in pypi. (#27)
+- Added LICENSE. (#29)
+
+
 Version 0.2.0 (2025-07-03)
 --------------------------
 
